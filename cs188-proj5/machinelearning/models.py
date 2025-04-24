@@ -177,6 +177,10 @@ class LanguageIDModel(Module):
         super(LanguageIDModel, self).__init__()
         "*** YOUR CODE HERE ***"
         # Initialize your model parameters here
+        self.batch_size = 32
+        self.initial = Linear(self.num_chars, 128)
+        self.recurrent = Linear(128, 128)
+        self.final = Linear(128, 5)
 
 
 
@@ -210,6 +214,14 @@ class LanguageIDModel(Module):
                 (also called logits)
         """
         "*** YOUR CODE HERE ***"
+        Hi = 0
+        for i in range(len(xs)):
+            if i == 0:
+                Hi = relu(self.initial(xs[i]))
+            else:
+                Hi = relu(self.initial(xs[i]) + self.recurrent(Hi))
+
+        return self.final(Hi)
 
 
 
