@@ -241,12 +241,30 @@ def Convolve(input: tensor, weight: tensor):
     The method 'zeros((y_dim,x_dim))' may also be useful. It initializes a pytorch tensor with dimensions (y_dim, x_dim), with every value
     set to zero.
     """
-    input_tensor_dimensions = input.shape
-    weight_dimensions = weight.shape
-    Output_Tensor = tensor(())
-    "*** YOUR CODE HERE ***"
+    # input_tensor_dimensions = input.shape
+    # weight_dimensions = weight.shape
+    # Output_Tensor = tensor(())
+    # "*** YOUR CODE HERE ***"
 
-    "*** End Code ***"
+    # "*** End Code ***"
+    # return Output_Tensor
+    input_height, input_width = input.shape
+    weight_height, weight_width = weight.shape
+    output_height = input_height - weight_height + 1
+    output_width = input_width - weight_width + 1
+    
+    # Initialize output tensor with zeros
+    Output_Tensor = zeros((output_height, output_width))
+    
+    # Perform convolution
+    for y in range(output_height):
+        for x in range(output_width):
+            # Extract the current window from input
+            window = input[y:y+weight_height, x:x+weight_width]
+            
+            # Compute element-wise multiplication and sum
+            Output_Tensor[y, x] = (window * weight).sum()
+    
     return Output_Tensor
 
 
@@ -270,6 +288,12 @@ class DigitConvolutionalModel(Module):
         self.convolution_weights = Parameter(ones((3, 3)))
         """ YOUR CODE HERE """
 
+        self.linear1 = Linear(676, 676)
+        self.linear4 = Linear(676, output_size)
+
+        
+        
+
 
     def forward(self, x):
         """
@@ -283,6 +307,9 @@ class DigitConvolutionalModel(Module):
         x = x.flatten(start_dim=1)
         """ YOUR CODE HERE """
 
+        h1 = relu(self.linear1(x))
+        return self.linear4(h1)
+        
 
 class Attention(Module):
     def __init__(self, layer_size, block_size):
@@ -321,4 +348,25 @@ class Attention(Module):
         B, T, C = input.size()
 
         """YOUR CODE HERE"""
+
+        # Project inputs to Q, K, V
+        K = self.k_layer(input)  
+        Q = self.q_layer(input)  
+        V = self.v_layer(input) 
+
+        # Compute attention scores
+        # (B, T, C) @ (B, C, T) 
+        attn_scores = matmul(Q, movedim(K, -1, -2)) / (self.layer_size**0.5)
+        
+        # Apply causal mask
+        attn_scores = attn_scores.masked_fill(self.mask[:,:,:T,:T] == 0, float('-inf'))
+        
+        # Apply softmax to get attention weights
+        attn_weights = softmax(attn_scores, dim=-1)  
+        
+        # Apply attention weights to values
+        output = matmul(attn_weights, V)  
+        
+        return output
+
 
